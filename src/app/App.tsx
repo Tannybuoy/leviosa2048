@@ -38,13 +38,13 @@ export default function App() {
         <Sparkles className="w-7 h-7" />
       </div>
 
-      <div className="relative z-10 max-w-xl w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-6xl font-bold text-[#F4B860] mb-2 drop-shadow-lg tracking-wide">LEVIOSA 2048</h1>
-          <p className="text-[#E89AC7] text-lg">Merge tiles to reach the Elder Wand! ⚡</p>
-        </div>
+      {/* Header - positioned at the top */}
+      <div className="absolute top-6 left-0 right-0 z-20 text-center">
+        <h1 className="text-6xl font-bold text-[#F4B860] mb-2 drop-shadow-lg tracking-wide">LEVIOSA 2048</h1>
+        <p className="text-[#E89AC7] text-lg">Merge tiles to reach the Elder Wand! ⚡</p>
+      </div>
 
+      <div className="relative z-10 max-w-xl w-full">
         {/* Score Panel */}
         <div className="flex justify-between items-center mb-6 gap-4">
           <div className="flex-1 bg-[#8B7A8B] rounded-2xl p-4 text-center">
