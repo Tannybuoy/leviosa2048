@@ -35,7 +35,7 @@ export function Tile({ tile }: TileProps) {
         x: col * 92,
         y: row * 92,
       }}
-      exit={{ opacity: 0, scale: 0 }}
+      exit={tile.isConsumed ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, scale: 0 }}
       transition={{
         x: { type: "spring", stiffness: 400, damping: 30 },
         y: { type: "spring", stiffness: 400, damping: 30 },
