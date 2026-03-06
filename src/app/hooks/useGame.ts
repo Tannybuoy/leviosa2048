@@ -194,8 +194,6 @@ export function useGame() {
   const makeMove = useCallback((direction: Direction) => {
     if (isAnimating.current) return;
 
-    let didMove = false;
-
     setGameState((prev) => {
       if (prev.gameOver) return prev;
 
@@ -203,71 +201,76 @@ export function useGame() {
 
       if (!moved) return prev;
 
-      didMove = true;
-      isAnimating.current = true;
+      const hasConsumed = movedTiles.some((t) => t.isConsumed);
 
-      // Phase 1: slide all tiles (including consumed ones) to their positions
-      // Consumed tiles still show with old value, merged tiles don't show new value yet
-      const phase1Tiles = movedTiles.map((t) => ({
-        ...t,
-        isMerged: false,
-      }));
+      if (hasConsumed) {
+        // Two-phase merge: first slide all tiles, then resolve merges
+        isAnimating.current = true;
 
-      return {
-        board: prev.board,
-        tiles: phase1Tiles,
-        score: prev.score + addedScore,
-        moves: prev.moves + 1,
-        gameOver: false,
-        won: prev.won,
-      };
-    });
+        const phase1Tiles = movedTiles.map((t) => ({
+          ...t,
+          isMerged: false,
+        }));
 
-    if (!didMove) return;
+        // Schedule phase 2
+        setTimeout(() => {
+          setGameState((phase1) => {
+            const activeTiles = phase1.tiles
+              .filter((t) => !t.isConsumed)
+              .map((t) => ({ ...t }));
 
-    // Phase 2: after slide animation, remove consumed tiles, show merge pop, add new tile
-    setTimeout(() => {
-      setGameState((prev) => {
-        const activeTiles = prev.tiles
-          .filter((t) => !t.isConsumed)
-          .map((t) => ({ ...t }));
+            // Apply merged values
+            activeTiles.forEach((t) => {
+              if (t.mergedValue) {
+                t.value = t.mergedValue;
+                t.mergedValue = undefined;
+                t.isMerged = true;
+              }
+            });
 
-        const mergedIds = new Set(
-          prev.tiles.filter((t) => !t.isConsumed).map((t) => {
-            const hasConsumedPartner = prev.tiles.some(
-              (c) => c.isConsumed && c.position.row === t.position.row && c.position.col === t.position.col
-            );
-            return hasConsumedPartner ? t.id : null;
-          }).filter(Boolean)
-        );
+            const tilesWithNew = addRandomTile(activeTiles);
+            const board = buildBoard(tilesWithNew);
+            const won = hasWon(board);
+            const gameOver = !canMove(board);
 
-        activeTiles.forEach((t) => {
-          if (mergedIds.has(t.id)) {
-            t.isMerged = true;
-            if (t.mergedValue) {
-              t.value = t.mergedValue;
-              t.mergedValue = undefined;
-            }
-          }
-        });
+            isAnimating.current = false;
 
-        const tilesWithNew = addRandomTile(activeTiles);
-        const board = buildBoard(tilesWithNew);
-        const won = hasWon(board);
-        const gameOver = !canMove(board);
-
-        isAnimating.current = false;
+            return {
+              board,
+              tiles: tilesWithNew,
+              score: phase1.score,
+              moves: phase1.moves,
+              gameOver,
+              won: won || phase1.won,
+            };
+          });
+        }, 100);
 
         return {
-          board,
-          tiles: tilesWithNew,
-          score: prev.score,
-          moves: prev.moves,
-          gameOver,
-          won: won || prev.won,
+          board: prev.board,
+          tiles: phase1Tiles,
+          score: prev.score + addedScore,
+          moves: prev.moves + 1,
+          gameOver: false,
+          won: prev.won,
         };
-      });
-    }, 100);
+      }
+
+      // No merges — just slide and add new tile immediately
+      const tilesWithNew = addRandomTile(movedTiles);
+      const board = buildBoard(tilesWithNew);
+      const won = hasWon(board);
+      const gameOver = !canMove(board);
+
+      return {
+        board,
+        tiles: tilesWithNew,
+        score: prev.score + addedScore,
+        moves: prev.moves + 1,
+        gameOver,
+        won: won || prev.won,
+      };
+    });
   }, []);
 
   const resetGame = useCallback(() => {
