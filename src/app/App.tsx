@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { GameBoard } from "./components/GameBoard";
 import { GameOverModal } from "./components/GameOverModal";
 import { RulesModal } from "./components/RulesModal";
@@ -14,11 +14,18 @@ export default function App() {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    const audio = new Audio(leviosaMusic);
+    audio.loop = true;
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audio.src = "";
+    };
+  }, []);
+
   const toggleMusic = useCallback(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(leviosaMusic);
-      audioRef.current.loop = true;
-    }
+    if (!audioRef.current) return;
     if (isMusicPlaying) {
       audioRef.current.pause();
     } else {
